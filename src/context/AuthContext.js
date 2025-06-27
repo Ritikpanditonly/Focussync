@@ -1,10 +1,8 @@
 import React, { createContext, useState, useEffect } from 'react';
 
-// 1️⃣ Create context for auth
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // 2️⃣ Store: token, user object, isLoggedIn flag
   const [token, setToken] = useState(() => localStorage.getItem('token') || null);
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('user');
@@ -12,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   });
   const [isLoggedIn, setIsLoggedIn] = useState(!!token);
 
-  // 3️⃣ Login / Logout functions
+  // 🔐 Login function
   const login = (newToken, userData = null) => {
     localStorage.setItem('token', newToken);
     if (userData) localStorage.setItem('user', JSON.stringify(userData));
@@ -22,22 +20,39 @@ export const AuthProvider = ({ children }) => {
     setIsLoggedIn(true);
   };
 
+  // 🔓 Logout function
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-
     setToken(null);
     setUser(null);
     setIsLoggedIn(false);
   };
 
-  // Keep isLoggedIn in sync if token changes elsewhere
+  // 🔁 After focus session complete
+  const updateCoins = (newCoinCount) => {
+    if (user) {
+      const updatedUser = { ...user, focusCoins: newCoinCount };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   useEffect(() => {
     setIsLoggedIn(!!token);
   }, [token]);
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, token, user, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        isLoggedIn,
+        token,
+        user,
+        login,
+        logout,
+        updateCoins  // 🆕 Expose updater
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
