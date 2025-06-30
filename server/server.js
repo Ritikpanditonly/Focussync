@@ -4,6 +4,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
+app.use('/api/user', require('./routes/userRoutes'));
+
+
 // 2. Initialize express app
 const app = express();
 

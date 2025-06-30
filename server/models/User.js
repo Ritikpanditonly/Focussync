@@ -19,11 +19,22 @@ const userSchema = new mongoose.Schema({
     required: true
   },
 
-  // 🆕 Focus coins field
   focusCoins: {
     type: Number,
     default: 0
+  },
+
+  // 🆕 Track last focus session date
+  lastFocusDate: {
+    type: Date
+  },
+
+  // 🆕 Consecutive day streak counter
+  streakCount: {
+    type: Number,
+    default: 0
   }
+
 }, {
   timestamps: true
 });
