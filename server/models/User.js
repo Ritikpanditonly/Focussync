@@ -33,7 +33,10 @@ const userSchema = new mongoose.Schema({
   streakCount: {
     type: Number,
     default: 0
-  }
+  },
+
+buddy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+
 
 }, {
   timestamps: true
