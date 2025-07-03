@@ -1,79 +1,116 @@
 import React, { useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { toast } from 'react-toastify';
+import {
+  UserPlusIcon,
+  MailCheckIcon,
+  FlameIcon,
+  CoinsIcon,
+  HandshakeIcon,
+  BellRingIcon
+} from 'lucide-react';
 
 const BuddyPanel = () => {
   const { token } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [buddy, setBuddy] = useState(null);
-  const [msg, setMsg] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const axiosAuth = axios.create({
     headers: { Authorization: `Bearer ${token}` }
   });
 
-  // 🔄 Fetch buddy info on load (if already connected)
+  // 🔄 Fetch buddy info on mount
   useEffect(() => {
     const fetchBuddy = async () => {
       try {
         const res = await axiosAuth.get('/api/buddy/stats');
         setBuddy(res.data);
-      } catch (err) {
-        // Buddy not connected → no error shown
+      } catch {
+        // Buddy not connected → ignore error
       }
     };
     fetchBuddy();
   }, []);
 
-  // 📩 Invite buddy by email
+  // 📩 Invite Buddy
   const handleInvite = async (e) => {
     e.preventDefault();
-    setMsg('');
-
+    setLoading(true);
     try {
       const res = await axiosAuth.post('/api/buddy/invite', { email });
+      setBuddy(res.data.buddy);
+      toast.success("✅ Buddy connected successfully!");
       setEmail('');
-      setBuddy(res.data.buddy); // Use returned buddy data
-      setMsg('Buddy connected successfully!');
     } catch (err) {
-      setMsg(err.response?.data?.error || 'Failed to invite buddy');
+      toast.error(err.response?.data?.error || "Failed to invite buddy");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 🛎 Dummy nudge
+  // 🛎 Dummy Nudge
   const handleNudge = () => {
-    alert('👊 Nudge sent! (not implemented)');
+    toast.info("📣 Nudge sent to your buddy!");
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: '20px auto', padding: 20, border: '1px solid #ddd', borderRadius: 8 }}>
-      <h2>👥 Buddy Panel</h2>
-
-      {msg && <p style={{ color: msg.includes('success') ? 'green' : 'red' }}>{msg}</p>}
+    <div className="bg-white max-w-xl mx-auto mt-8 p-6 rounded-2xl shadow-xl space-y-6">
+      <h2 className="text-2xl font-bold flex items-center gap-2 text-indigo-600">
+        <HandshakeIcon className="w-6 h-6" />
+        Buddy Panel
+      </h2>
 
       {/* 📧 Invite Form */}
       {!buddy && (
-        <form onSubmit={handleInvite} style={{ marginBottom: 20 }}>
+        <form onSubmit={handleInvite} className="space-y-3">
           <input
             type="email"
-            placeholder="Buddy's email"
             value={email}
+            placeholder="Enter buddy's email"
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ padding: 8, width: '100%', marginBottom: 10 }}
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
           />
-          <button type="submit" style={{ width: '100%' }}>Invite Buddy</button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700"
+          >
+            <UserPlusIcon className="inline w-4 h-4 mr-2" />
+            {loading ? 'Sending Invite...' : 'Invite Buddy'}
+          </button>
         </form>
       )}
 
       {/* ✅ Buddy Info */}
       {buddy && (
-        <div style={{ background: '#f9f9f9', padding: 15, borderRadius: 6 }}>
-          <p>👤 <strong>Name:</strong> {buddy.name}</p>
-          <p>🔥 <strong>Streak:</strong> {buddy.streakCount} Days</p>
-          <p>💰 <strong>Focus Coins:</strong> {buddy.focusCoins}</p>
-          <p>✅ <strong>Status:</strong> Connected</p>
-          <button onClick={handleNudge} style={{ marginTop: 10 }}>Send Nudge 👊</button>
+        <div className="bg-gray-50 p-4 rounded-xl space-y-2 text-gray-800">
+          <div className="flex items-center gap-2">
+            <MailCheckIcon className="w-4 h-4 text-green-600" />
+            <span><strong>Name:</strong> {buddy.name}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FlameIcon className="w-4 h-4 text-orange-500" />
+            <span><strong>Streak:</strong> {buddy.streakCount} days</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CoinsIcon className="w-4 h-4 text-yellow-500" />
+            <span><strong>Coins:</strong> {buddy.focusCoins}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <HandshakeIcon className="w-4 h-4 text-blue-500" />
+            <span><strong>Status:</strong> Connected ✅</span>
+          </div>
+
+          <button
+            onClick={handleNudge}
+            className="mt-3 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+          >
+            <BellRingIcon className="inline w-4 h-4 mr-2" />
+            Send Nudge
+          </button>
         </div>
       )}
     </div>

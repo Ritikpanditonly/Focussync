@@ -1,12 +1,27 @@
-import "./App.css";
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Your pages
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import Journal from './components/journal';
+import Rewards from './components/Rewards';
+import BuddyPanel from './components/BuddyPanel';
 
 function App() {
   return (
-    <main class="flex justify-center gap-4 flex-col min-h-screen">
-      <h1 class="text-3xl text-center font-bold underline">React & Tailwind CSS Starter Pack</h1>
-      <p class="text-center text-xl">This is a starter pack for React & Tailwind CSS projects.</p>
-      <img src="https://bit.ly/3wsmzTy" alt="meme" class="mx-auto" />
-    </main>
+    <BrowserRouter>
+      <ToastContainer />
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/journal" element={<Journal />} />
+        <Route path="/rewards" element={<Rewards />} />
+        <Route path="/buddy" element={<BuddyPanel />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

@@ -1,100 +1,90 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { toast } from 'react-toastify';
+import { GiftIcon, UnlockIcon, LockIcon, CoinsIcon } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 
 const Rewards = () => {
-  /* --------------------------------------------------------
-   * Context: grab token + coin updater so we can sync UI
-   * ------------------------------------------------------ */
-  const { token, updateCoins, user } = useContext(AuthContext);
+  const { token, updateCoins } = useContext(AuthContext);
 
-  /* --------------------------------------------------------
-   * Local state
-   * ------------------------------------------------------ */
   const [title, setTitle] = useState('');
   const [cost, setCost] = useState('');
   const [rewards, setRewards] = useState([]);
-  const [msg, setMsg] = useState('');
+  const [coins, setCoins] = useState(0);
 
-  /* --------------------------------------------------------
-   * Reusable Axios instance with auth header
-   * ------------------------------------------------------ */
   const axiosAuth = axios.create({
-    headers: { Authorization: `Bearer ${token}` }
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 
-  /* --------------------------------------------------------
-   * 1️⃣ Fetch all rewards on mount
-   * ------------------------------------------------------ */
+  // Fetch rewards & coin count
+  const fetchRewards = async () => {
+    try {
+      const res = await axiosAuth.get('/api/rewards');
+      setRewards(res.data.rewards || res.data);
+      setCoins(res.data.coins ?? coins);
+    } catch (err) {
+      toast.error('Failed to fetch rewards');
+    }
+  };
+
   useEffect(() => {
-    const fetchRewards = async () => {
-      try {
-        const res = await axiosAuth.get('/api/rewards');
-        setRewards(res.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
     fetchRewards();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, []);
 
-  /* --------------------------------------------------------
-   * Add new reward
-   * ------------------------------------------------------ */
   const handleAddReward = async (e) => {
     e.preventDefault();
     if (!title || !cost) return;
 
     try {
-      const res = await axiosAuth.post('/api/rewards', {
-        title,
-        cost: Number(cost)
-      });
-      setRewards((prev) => [...prev, res.data.reward]);
+      await axiosAuth.post('/api/rewards', { title, cost: Number(cost) });
+      toast.success('🎁 Reward added');
       setTitle('');
       setCost('');
-      setMsg('');
+      fetchRewards();
     } catch (err) {
-      setMsg(err.response?.data?.error || 'Error adding reward');
+      toast.error(err.response?.data?.error || 'Failed to add reward');
     }
   };
 
-  /* --------------------------------------------------------
-   * Unlock reward
-   * ------------------------------------------------------ */
   const handleUnlock = async (id) => {
     try {
       const res = await axiosAuth.patch(`/api/rewards/${id}/unlock`);
-      // Update local list
       setRewards((prev) =>
         prev.map((r) => (r._id === id ? res.data.reward : r))
       );
-      // Update global coin count
+      setCoins(res.data.coinsRemaining);
       updateCoins(res.data.coinsRemaining);
-      setMsg('');
+      toast.success('✅ Reward unlocked!');
     } catch (err) {
-      setMsg(err.response?.data?.error || 'Error unlocking reward');
+      toast.error(err.response?.data?.error || 'Unlock failed');
     }
   };
 
-  /* --------------------------------------------------------
-   * Render
-   * ------------------------------------------------------ */
   return (
-    <div style={{ maxWidth: 500, margin: '0 auto' }}>
-      <h2>Rewards</h2>
+    <div className="bg-white p-6 rounded-2xl shadow-xl max-w-xl mx-auto my-6 space-y-6">
+      <h2 className="text-2xl font-bold flex items-center gap-2 text-yellow-600">
+        <GiftIcon className="w-6 h-6" />
+        Rewards
+      </h2>
 
-      {msg && <p style={{ color: 'red' }}>{msg}</p>}
+      <p className="text-lg text-gray-700">
+        <CoinsIcon className="inline w-5 h-5 mr-1 text-yellow-400" />
+        Coins: <strong>{coins}</strong>
+      </p>
 
-      {/* ───── Form to add reward ───── */}
-      <form onSubmit={handleAddReward} style={{ marginBottom: 20 }}>
+      {/* Add Reward Form */}
+      <form
+        onSubmit={handleAddReward}
+        className="flex flex-wrap gap-2 items-center"
+      >
         <input
           type="text"
           placeholder="Reward title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
+          className="flex-1 px-3 py-2 border rounded-lg"
         />
         <input
           type="number"
@@ -103,35 +93,51 @@ const Rewards = () => {
           min="1"
           onChange={(e) => setCost(e.target.value)}
           required
+          className="w-24 px-3 py-2 border rounded-lg"
         />
-        <button type="submit">Add Reward</button>
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+        >
+          Add
+        </button>
       </form>
 
-      {/* ───── List of rewards ───── */}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {rewards.map((r) => (
-          <li
-            key={r._id}
-            style={{
-              marginBottom: 10,
-              padding: 10,
-              border: '1px solid #ddd',
-              borderRadius: 6
-            }}
-          >
-            <strong>{r.title}</strong> — {r.cost} coins —{' '}
-            {r.unlocked ? 'Unlocked ✅' : 'Locked 🔒'}
-            {!r.unlocked && user?.focusCoins >= r.cost && (
-              <button
-                onClick={() => handleUnlock(r._id)}
-                style={{ marginLeft: 10 }}
-              >
-                Unlock
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
+      {/* List of Rewards */}
+      <div className="grid gap-4">
+        {rewards.length === 0 ? (
+          <p className="text-gray-500">No rewards added yet.</p>
+        ) : (
+          rewards.map((r) => (
+            <div
+              key={r._id}
+              className="border p-4 rounded-xl shadow-sm flex justify-between items-center bg-gray-50"
+            >
+              <div>
+                <h3 className="text-lg font-semibold">{r.title}</h3>
+                <p className="text-sm text-gray-600">
+                  Cost: {r.cost} | Status:{' '}
+                  {r.unlocked ? (
+                    <span className="text-green-600">Unlocked ✅</span>
+                  ) : (
+                    <span className="text-red-600">Locked 🔒</span>
+                  )}
+                </p>
+              </div>
+
+              {!r.unlocked && coins >= r.cost && (
+                <button
+                  onClick={() => handleUnlock(r._id)}
+                  className="bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition"
+                >
+                  <UnlockIcon className="inline w-4 h-4 mr-1" />
+                  Unlock
+                </button>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };

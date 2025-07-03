@@ -1,34 +1,19 @@
 const express = require('express');
-
 const router = express.Router();
 
-
-// middleware to verify jwt and attach req.user.id
-
+// Middleware to verify JWT and attach req.user.id
 const requireAuth = require('../middleware/authMiddleware');
 
-// 📌 Controller function (you’ll add it in controllers/buddyController.js)
-const {inviteBuddy} = require('../controllers/buddyController');
-
-/**
- * POST /api/buddy/invite
- * Body: { email }
- * Logic handled in inviteBuddy:
- *   1. Find the user by email
- *   2. Set them as your buddy (req.user.id ⇄ foundUser._id)
- *   3. Save both user documents
- */
-
-router.post('/invite', requireAuth, inviteBuddy);
-
+// ✅ Import controller functions (only once)
 const { inviteBuddy, getBuddyStats } = require('../controllers/buddyController');
 
-// Existing
-router.post('/invite', requireAuth, inviteBuddy);
+// 🔐 Protect all routes
+router.use(requireAuth);
 
-// 🆕 New route
-router.get('/stats', requireAuth, getBuddyStats);
+// POST /api/buddy/invite → Invite buddy by email
+router.post('/invite', inviteBuddy);
 
-
+// GET /api/buddy/stats → Get buddy streak/coins info
+router.get('/stats', getBuddyStats);
 
 module.exports = router;

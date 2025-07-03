@@ -1,23 +1,22 @@
 const express = require('express');
 const router = express.Router();
-
 const requireAuth = require('../middleware/authMiddleware');
+
 const {
-  addReward,
   getRewards,
+  addReward,
   unlockReward
 } = require('../controllers/rewardController');
 
-// All routes below require auth token
-router.use(requireAuth);  // ✅ Apply to all routes in this file
+router.use(requireAuth); // protect all routes
 
-// POST /api/rewards → Add new reward
-router.post('/', addReward);
-
-// GET /api/rewards → Get all user rewards
+// GET all rewards
 router.get('/', getRewards);
 
-// PATCH /api/rewards/:id/unlock → Deduct coins + mark as unlocked
+// POST a new reward
+router.post('/', addReward);
+
+// PATCH unlock a reward
 router.patch('/:id/unlock', unlockReward);
 
 module.exports = router;
